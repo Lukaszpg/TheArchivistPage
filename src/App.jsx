@@ -35,8 +35,8 @@ import RuneIcon from "./icons/rune.svg";
 import SacredIcon from "./icons/sacred.svg";
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION;
-const GAME_VERSION = "13.0.0";
-const LATEST_RELEASE = "https://github.com/Lukaszpg/PD2-Sanctuary-of-Exile/releases/tag/v13.0.0";
+const GAME_VERSION = "13.0.1";
+const LATEST_RELEASE = "https://github.com/Lukaszpg/PD2-Sanctuary-of-Exile/releases/tag/v13.0.1";
 
 const TABS = {
     weapons: "Weapons",
