@@ -97,5 +97,14 @@
       "- Hatred Orb of Currency - 10% occurence rate",
       "Recipe: Infernal Kiln + 25x Crystallised Cindersoul + 1x Any Hatred Orb"
     ]
+  },
+  {
+    "id": "corrupted-essences",
+    "title": "Obtain Corrupted Essences",
+    "text": [
+      "- Infernal Kiln + 1x Any Perfect Essence + 1x Crystallised Cindersoul = Essence of Insanity",
+      "- Infernal Kiln + 1x Any Perfect Essence + 1x Crystallised Cindersoul + 1x Key = Essence of Hysteria"
+
+    ]
   }
 ]
