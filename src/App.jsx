@@ -36,8 +36,8 @@ import SacredIcon from "./icons/sacred.svg";
 import FateCardIcon from "./icons/fatecard.svg";
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION;
-const GAME_VERSION = "13.0.1";
-const LATEST_RELEASE = "https://github.com/Lukaszpg/PD2-Sanctuary-of-Exile/releases/tag/v13.0.1";
+const GAME_VERSION = "13.0.2";
+const LATEST_RELEASE = "https://github.com/Lukaszpg/PD2-Sanctuary-of-Exile/releases/tag/v13.0.2";
 
 const HIDDEN_MODIFIERS = [
     "One Ring to bring them all and in the darkness bind them",
