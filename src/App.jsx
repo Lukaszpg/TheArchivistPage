@@ -33,10 +33,15 @@ import MythicJewelIcon from "./icons/mythic.svg";
 import OrnateCharmIcon from "./icons/cm4.svg";
 import RuneIcon from "./icons/rune.svg";
 import SacredIcon from "./icons/sacred.svg";
+import FateCardIcon from "./icons/fatecard.svg";
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION;
 const GAME_VERSION = "13.0.1";
 const LATEST_RELEASE = "https://github.com/Lukaszpg/PD2-Sanctuary-of-Exile/releases/tag/v13.0.1";
+
+const HIDDEN_MODIFIERS = [
+    "One Ring to bring them all and in the darkness bind them",
+];
 
 const TABS = {
     weapons: "Weapons",
@@ -45,21 +50,34 @@ const TABS = {
     runewords: "Runewords",
     affixes: "Affixes",
     sacreds: "Sacreds",
-    corruptions: "Corruptions",
+    corruptions: {
+        title: "Corruptions",
+        badge: "Beta"
+    },
     skills: "Skills",
     cube: "Cube Recipes",
-    changes: "Standard mode",
+    changes: "Standard Mode",
     help: "Help",
     changelog: "Changelog",
     calculators: "Skill Calculators",
-    damnation: "Damnation Mode"
+    dropcalc: {
+        title: "Drop calculator",
+        badge: "Alpha"
+    },
+    damnation: {
+        title: "Damnation Mode",
+        badge: "Beta"
+    },
+    ascendancies: "Ascendancies",
+    mapping: "Mapping",
+    fatecards: "Fate Cards",
+    kiln: "Infernal Kiln",
+    essences: "Essences"
 };
 
 const ALL_RUNES = ["El", "Eld", "Tir", "Nef", "Eth", "Ith", "Tal", "Ral", "Ort", "Thul", "Amn", "Sol", "Shael", "Dol", "Hel", "Io", "Lum", "Ko", "Fal", "Lem", "Pul", "Um", "Mal", "Ist", "Gul", "Vex", "Ohm", "Lo", "Sur", "Ber", "Jah", "Cham", "Zod"];
 
 const PROP_HIGHLIGHT_RULES = [{test: /corrupted/i, className: "propRed"},];
-
-const TAB_KEYS = ["weapons", "armors", "uniques", "runewords", "affixes", "skills", "sacreds", "corruptions", "cube", "changes", "damnation", "calculators", "help"];
 
 const WEAPON_ICON_MAP = {
     sword: SwordIcon,
@@ -171,7 +189,23 @@ const INFO_BY_TAB = {
 };
 
 function getTitleByTab(tab) {
-    return TABS[tab];
+    const value = TABS[tab];
+
+    if (value && typeof value === "object") {
+        return value.title;
+    }
+
+    return value;
+}
+
+function visibleProperties(properties) {
+    return (properties || []).filter((prop) => {
+        const text = String(prop);
+
+        return !HIDDEN_MODIFIERS.some((hidden) =>
+            text.includes(hidden)
+        );
+    });
 }
 
 function sacredTypes(it) {
@@ -266,27 +300,6 @@ function affixDisplayString(affix) {
     return String(dp);
 }
 
-function affixMaxValue(affix) {
-    const dp = affix?.displayProperties;
-    if (!dp) return 0;
-
-    // Array case
-    if (Array.isArray(dp)) {
-        if (dp.length && typeof dp[0] === "object") {
-            return dp.reduce((max, p) => Math.max(max, Number(p?.max ?? 0)), 0);
-        }
-        // Old pure-string format – nothing numeric to sort on
-        return 0;
-    }
-
-    // Single object
-    if (typeof dp === "object") {
-        return Number(dp.max ?? 0);
-    }
-
-    return 0;
-}
-
 function repeatIngredient(name, qtyRaw) {
     const nameStr = n(name);
     if (!nameStr) return [];
@@ -334,6 +347,10 @@ function getItemIconUrl(tab, item) {
 
     if (tab === "sacreds") {
         return SacredIcon;
+    }
+
+    if (tab === "fatecards") {
+        return FateCardIcon;
     }
 
     return null;
@@ -790,7 +807,7 @@ function armorDefenseLine(a) {
     return "";
 }
 
-function useJson(fileName) {
+function useJson(fileName, damnationMode) {
     const [state, setState] = React.useState({
         loading: true, data: [], error: null,
     });
@@ -798,7 +815,10 @@ function useJson(fileName) {
     React.useEffect(() => {
         let cancelled = false;
 
-        const url = `${import.meta.env.BASE_URL}data/${fileName}`;
+        const url =
+            damnationMode && fileName === "Uniques.json"
+                ? `${import.meta.env.BASE_URL}data/damnation/${fileName}`
+                : `${import.meta.env.BASE_URL}data/${fileName}`;
 
         setState((s) => ({...s, loading: true, error: null}));
 
@@ -823,7 +843,7 @@ function useJson(fileName) {
         return () => {
             cancelled = true;
         };
-    }, [fileName]);
+    }, [fileName, damnationMode]);
 
     return state;
 }
@@ -986,6 +1006,7 @@ function FiltersBar({
                         showHellforged,
                         typePlaceholder,
                         searchInputRef,
+                        showType = true,
                         showTier = true,
                         showHighlight = false,
                         highlightOnly,
@@ -1023,7 +1044,6 @@ function FiltersBar({
 
     return (<div className="filtersRow">
         <div className="filtersPanel">
-            {/* Search input (same as before) */}
             <input
                 ref={searchInputRef}
                 type="text"
@@ -1033,16 +1053,16 @@ function FiltersBar({
                 placeholder="Search item name…"
             />
 
-            {/* Type (searchable) */}
-            <SearchableSelect
-                value={typeValue}
-                onChange={setTypeValue}
-                options={typeOptions}
-                placeholder={typePlaceholder}
-                style={{maxWidth: 260}}
-            />
 
-            {/* Sockets (also searchable, even though it’s small) */}
+            {showType && (
+                <SearchableSelect
+                    value={typeValue}
+                    onChange={setTypeValue}
+                    options={typeOptions}
+                    placeholder={typePlaceholder}
+                    style={{maxWidth: 260}}
+                />)}
+
             {showSockets && (<SearchableSelect
                 value={socketsValue}
                 onChange={setSocketsValue}
@@ -1136,7 +1156,23 @@ function InfoPanel({title, markdownText, isOpen, onToggle, onLink}) {
     </div>);
 }
 
+function renderTabTitle(tab) {
+    const value = TABS[tab];
+
+    if (value && typeof value === "object") {
+        return (
+            <>
+                {value.title}
+                {value.badge && <span className="tabBadge">{value.badge}</span>}
+            </>
+        );
+    }
+
+    return value;
+}
+
 function ListPanel({title, countLabel, items, activeIndex, setActiveIndex, subLabel, tinyLabel, tab}) {
+
     const activeRowRef = React.useRef(null);
 
     React.useEffect(() => {
@@ -1378,6 +1414,923 @@ function CurseEffectCalculator() {
 
         </div>
     </div>);
+}
+
+function DropCalculatorPanel({request, clearRequest, damnationMode}) {
+    const [dropMode, setDropMode] = React.useState("unique");
+    const [query, setQuery] = React.useState("");
+    const [rows, setRows] = React.useState([]);
+    const [page, setPage] = React.useState(1);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState("");
+    const [difficulty, setDifficulty] = React.useState("");
+    const [players, setPlayers] = React.useState("1");
+    const [mf, setMf] = React.useState("");
+
+    useEffect(() => {
+        if (!request) return;
+
+        setDropMode("unique");
+        setDifficulty("H");
+        setQuery(request.item);
+
+        clearRequest?.();
+
+    }, [request]);
+
+    React.useEffect(() => {
+        const id = window.setTimeout(() => {
+            calculateAll();
+        }, 300);
+
+        return () => window.clearTimeout(id);
+    }, [dropMode, query, difficulty, players, mf, damnationMode]);
+
+    const n = (v) => (v === null || v === undefined ? "" : String(v).trim());
+    const num = (v) => {
+        const x = Number(String(v ?? "").replace(",", "."));
+        return Number.isFinite(x) ? x : 0;
+    };
+
+    async function loadTxt(fileName) {
+        const modeFolder = damnationMode ? "damnation" : "standard";
+
+        const url = `${import.meta.env.BASE_URL}data/${modeFolder}/${fileName}`;
+        const res = await fetch(url, {cache: "no-store"});
+
+        if (!res.ok) {
+            throw new Error(`${fileName}: HTTP ${res.status}`);
+        }
+
+        return res.text();
+    }
+
+    function parseTxt(text) {
+        const lines = text.replace(/\r\n/g, "\n").split("\n").filter((l) => l.trim() !== "");
+        const headers = lines[0].split("\t").map((h) => h.trim());
+
+        return lines.slice(1).map((line) => {
+            const cols = line.split("\t");
+            const row = {};
+            headers.forEach((h, i) => {
+                row[h] = cols[i] ?? "";
+            });
+            return row;
+        });
+    }
+
+    function byLower(rows, column, value) {
+        const needle = n(value).toLowerCase();
+        return rows.find((r) => n(r[column]).toLowerCase() === needle);
+    }
+
+    function applyPicks(probability, picks) {
+        if (picks === 1) return probability;
+
+        const cappedPicks = picks > 6 ? 6 : picks;
+        return 1 - Math.pow(1 - probability, cappedPicks);
+    }
+
+    function getRootTc(tcRows, tcName, monsterLevel) {
+        const start = byLower(tcRows, "Treasure Class", tcName);
+        if (!start) return tcName;
+
+        const group = n(start.group);
+        if (!group) return tcName;
+
+        const candidates = tcRows
+            .filter((r) => n(r.group) === group)
+            .filter((r) => num(r.level) <= monsterLevel)
+            .sort((a, b) => num(b.level) - num(a.level));
+
+        return n(candidates[0]?.["Treasure Class"] || tcName);
+    }
+
+    function buildTypeRarityMap(itemTypes) {
+        const map = new Map();
+
+        for (const r of itemTypes) {
+            const code = n(r.Code || r.code);
+            if (!code) continue;
+
+            const rarity = num(r.Rarity || r.rarity);
+            map.set(code, rarity > 0 ? rarity : 1);
+        }
+
+        return map;
+    }
+
+    function isBowLike(w) {
+        const type = n(w.type).toLowerCase();
+        const type2 = n(w.type2).toLowerCase();
+
+        return (
+            type.includes("bow") ||
+            type2.includes("bow") ||
+            type.includes("xbow") ||
+            type2.includes("xbow") ||
+            type.includes("crossbow") ||
+            type2.includes("crossbow")
+        );
+    }
+
+    function buildAutoTcs(weapons, armors, itemTypes) {
+        const buckets = new Map();
+        const typeRarity = buildTypeRarityMap(itemTypes);
+
+        function add(bucket, code, weight) {
+            if (!buckets.has(bucket)) buckets.set(bucket, []);
+            buckets.get(bucket).push({code, weight});
+        }
+
+        function itemWeight(row) {
+            const type = n(row.type);
+            const fromType = typeRarity.get(type);
+
+            if (fromType > 0) return fromType;
+
+            const fromItem = num(row.rarity);
+            return fromItem > 0 ? fromItem : 1;
+        }
+
+        function addRows(rows, prefixes) {
+            for (const r of rows) {
+                if (n(r.spawnable) !== "1") continue;
+
+                const code = n(r.code);
+                if (!code) continue;
+
+                const level = num(r.level);
+                if (level <= 0) continue;
+
+                const bucketLevel = Math.ceil(level / 3) * 3;
+                const weight = itemWeight(r);
+
+                for (const prefix of prefixes) {
+                    add(`${prefix}${bucketLevel}`, code, weight);
+                }
+            }
+        }
+
+        addRows(weapons, ["weap"]);
+        addRows(weapons.filter((w) => !isBowLike(w)), ["mele"]);
+        addRows(weapons.filter((w) => isBowLike(w)), ["bow"]);
+        addRows(armors, ["armo"]);
+
+        return buckets;
+    }
+
+    function isExpansionItem(baseItem) {
+        const v = n(baseItem.version);
+        return v === "1" || v === "100";
+    }
+
+    function isExceptionalOrElite(baseItem, exceptionalOrEliteCodes) {
+        const code = n(baseItem.code);
+
+        if (exceptionalOrEliteCodes?.has(code)) {
+            return true;
+        }
+
+        const norm = n(baseItem.normcode);
+        const uber = n(baseItem.ubercode);
+        const ultra = n(baseItem.ultracode);
+
+        return (
+            (norm && code !== norm) ||
+            (uber && code === uber) ||
+            (ultra && code === ultra)
+        );
+    }
+
+    function getItemRatioRow(itemRatioRows, baseItem, exceptionalOrEliteCodes) {
+        const version = "1";
+        const uber = isExceptionalOrElite(baseItem, exceptionalOrEliteCodes) ? "1" : "0";
+
+        return itemRatioRows.find((r) =>
+            n(r.Version) === version &&
+            n(r.Uber) === uber &&
+            n(r["Class Specific"]) === "0"
+        ) || itemRatioRows[0];
+    }
+
+    function adjustedNoDrop(noDrop, itemProbTotal, playersValue, partyValue) {
+        const players = Math.max(1, Math.min(8, Math.floor(num(playersValue) || 1)));
+        const party = Math.max(1, Math.min(8, Math.floor(num(partyValue) || 1)));
+
+        if (noDrop <= 0 || itemProbTotal <= 0) return 0;
+        if (players <= 1 && party <= 1) return noDrop;
+
+        const exponent = Math.floor(
+            1 + ((players - 1) / 2) + ((party - 1) / 2)
+        );
+
+        const base = noDrop / (noDrop + itemProbTotal);
+        const powered = Math.pow(base, exponent);
+
+        return Math.floor(itemProbTotal * powered / (1 - powered));
+    }
+
+    function tcEntries(tc) {
+        const out = [];
+
+        for (let i = 1; i <= 10; i++) {
+            const item = n(tc[`Item${i}`]);
+            const prob = num(tc[`Prob${i}`]);
+
+            if (item && prob > 0) {
+                out.push({item, prob});
+            }
+        }
+
+        return out;
+    }
+
+    function probabilityForPicks(p, picks) {
+        if (picks <= 1) return p;
+        const capped = Math.min(6, picks);
+        return 1 - Math.pow(1 - p, capped);
+    }
+
+    function mergeRatios(a, b) {
+        return {
+            unique: Math.max(a?.unique || 0, b?.unique || 0),
+            set: Math.max(a?.set || 0, b?.set || 0),
+            rare: Math.max(a?.rare || 0, b?.rare || 0),
+            magic: Math.max(a?.magic || 0, b?.magic || 0),
+        };
+    }
+
+    function tcQualityRatios(tc) {
+        return {
+            unique: num(tc.Unique),
+            set: num(tc.Set),
+            rare: num(tc.Rare),
+            magic: num(tc.Magic),
+        };
+    }
+
+    function qualityOccurrenceChance(items, targetItem, code, monsterLevel) {
+        const eligible = items.filter((u) =>
+            rowItemCode(u) === code &&
+            num(u.lvl) <= monsterLevel &&
+            (n(u.enabled) === "" || n(u.enabled) === "1")
+        );
+
+        if (!eligible.length) return 0;
+
+        const total = eligible.reduce((sum, u) => sum + Math.max(1, num(u.rarity) || 1), 0);
+        const own = Math.max(1, num(targetItem.rarity) || 1);
+
+        return own / total;
+    }
+
+    function qualityChance(itemRatioRows, baseItem, targetItem, exceptionalOrEliteCodes, monsterLevel, mfValue, tcBonus, qualityName) {
+        const ratio = getItemRatioRow(itemRatioRows, baseItem, exceptionalOrEliteCodes);
+
+        const q =
+            qualityName === "set"
+                ? "Set"
+                : qualityName === "rare"
+                    ? "Rare"
+                    : qualityName === "magic"
+                        ? "Magic"
+                        : "Unique";
+
+        const base = num(ratio[q]);
+        const divisor = Math.max(1, num(ratio[`${q}Divisor`]));
+        const min = num(ratio[`${q}Min`]);
+        const qlvl = num(baseItem.level);
+
+        let chance = base - Math.floor((monsterLevel - qlvl) / divisor);
+        chance *= 128;
+
+        let mfCap = 0;
+        if (qualityName === "unique") mfCap = 250;
+        if (qualityName === "set") mfCap = 500;
+        if (qualityName === "rare") mfCap = 600;
+
+        if (mfCap > 0) {
+            const rawMf = Math.max(0, num(mfValue));
+            const effectiveMf = rawMf <= 10
+                ? rawMf
+                : Math.floor((rawMf * mfCap) / (rawMf + mfCap));
+
+            chance = Math.floor((chance * 100) / (100 + effectiveMf));
+        }
+
+        if (chance < min) {
+            chance = min;
+        }
+
+        const bonus = Math.max(0, Math.min(1024, num(tcBonus)));
+        if (bonus > 0) {
+            chance = chance - Math.floor((chance * bonus) / 1024);
+        }
+
+        return chance <= 0 ? 1 : 128 / chance;
+    }
+
+    function rowItemCode(row) {
+        return n(row.code) || n(row.item);
+    }
+
+    function makeAccumulator() {
+        return {
+            groups: [new Map()]
+        };
+    }
+
+    function accumulatorCurrent(acc) {
+        return acc.groups[acc.groups.length - 1];
+    }
+
+    function forkAccumulator(acc) {
+        const current = accumulatorCurrent(acc);
+        if (current.size > 0) {
+            acc.groups.push(new Map());
+        }
+    }
+
+    function accumulateOutcome(acc, probability, ratios, picks) {
+        const current = accumulatorCurrent(acc);
+        const key = `${picks}|${ratios.unique}|${ratios.set}|${ratios.rare}|${ratios.magic}`;
+
+        const old = current.get(key);
+
+        if (old) {
+            old.probability += probability;
+            old.ratios = mergeRatios(old.ratios, ratios);
+        } else {
+            current.set(key, {
+                probability,
+                ratios,
+                picks
+            });
+        }
+    }
+
+    function collectPaths(
+        ctx,
+        outcomeName,
+        selectionNumerator,
+        selectionDenominator,
+        parentPicks,
+        pathProbability,
+        ratiosAccumulator,
+        acc,
+        accumulatedPicks,
+        visited = new Set()
+    ) {
+        const name = n(outcomeName);
+        if (!name) return;
+
+        const tc = byLower(ctx.treasure, "Treasure Class", name);
+        const autoRows = ctx.autoTcs.get(name);
+
+        const isRegularTc = !!tc;
+        const isAutoTc = !!autoRows;
+        const isTargetBase = name === ctx.targetCode;
+
+        const configuredPicks = isRegularTc ? Math.trunc(num(tc.Picks) || 1) : 1;
+        const parentPicksNegative = parentPicks < 0;
+
+        const adjustedPicks = configuredPicks < 0
+            ? accumulatedPicks
+            : configuredPicks;
+
+        const updatedAccumulatedPicks = parentPicksNegative
+            ? selectionNumerator * accumulatedPicks * adjustedPicks
+            : accumulatedPicks * adjustedPicks;
+
+        const selectionProbability = parentPicksNegative
+            ? pathProbability
+            : pathProbability * (selectionNumerator / selectionDenominator);
+
+        if (parentPicksNegative) {
+            forkAccumulator(acc);
+        }
+
+        const nextRatios = isRegularTc
+            ? mergeRatios(ratiosAccumulator, tcQualityRatios(tc))
+            : ratiosAccumulator;
+
+        if (isTargetBase) {
+            accumulateOutcome(acc, selectionProbability, nextRatios, updatedAccumulatedPicks);
+            return;
+        }
+
+        if (isAutoTc) {
+            const total = autoRows.reduce((sum, r) => sum + r.weight, 0);
+            if (total <= 0) return;
+
+            for (const r of autoRows) {
+                if (r.code !== ctx.targetCode) continue;
+
+                collectPaths(
+                    ctx,
+                    r.code,
+                    r.weight,
+                    total,
+                    configuredPicks,
+                    selectionProbability,
+                    nextRatios,
+                    acc,
+                    updatedAccumulatedPicks,
+                    visited
+                );
+            }
+
+            return;
+        }
+
+        if (!isRegularTc) return;
+
+        if (visited.has(name)) return;
+        const nextVisited = new Set(visited);
+        nextVisited.add(name);
+
+        const entries = tcEntries(tc);
+        if (!entries.length) return;
+
+        const probabilityDenominator = entries.reduce((sum, e) => sum + e.prob, 0);
+        const noDrop = adjustedNoDrop(num(tc.NoDrop), probabilityDenominator, ctx.players, ctx.party);
+        const denominatorWithNoDrop = probabilityDenominator + noDrop;
+
+        for (const e of entries) {
+            collectPaths(
+                ctx,
+                e.item,
+                e.prob,
+                denominatorWithNoDrop,
+                configuredPicks,
+                selectionProbability,
+                nextRatios,
+                acc,
+                updatedAccumulatedPicks,
+                nextVisited
+            );
+        }
+    }
+
+    function finalQualityFactor(ctx, ratios) {
+        if (ctx.dropMode === "misc") {
+            return 1;
+        }
+
+        const sourceItems = ctx.dropMode === "set" ? ctx.setItems : ctx.uniqueItems;
+
+        const occurrence = qualityOccurrenceChance(
+            sourceItems,
+            ctx.targetItem,
+            ctx.targetCode,
+            ctx.monsterLevel
+        );
+
+        if (occurrence <= 0) return 0;
+
+        if (ctx.dropMode === "unique") {
+            return qualityChance(
+                ctx.itemRatio,
+                ctx.baseItem,
+                ctx.targetItem,
+                ctx.exceptionalOrEliteCodes,
+                ctx.monsterLevel,
+                ctx.mf,
+                ratios.unique,
+                "unique"
+            ) * occurrence;
+        }
+
+        if (ctx.dropMode === "set") {
+            const uniqueRoll = qualityChance(
+                ctx.itemRatio,
+                ctx.baseItem,
+                ctx.targetItem,
+                ctx.exceptionalOrEliteCodes,
+                ctx.monsterLevel,
+                ctx.mf,
+                ratios.unique,
+                "unique"
+            );
+
+            const setRoll = qualityChance(
+                ctx.itemRatio,
+                ctx.baseItem,
+                ctx.targetItem,
+                ctx.exceptionalOrEliteCodes,
+                ctx.monsterLevel,
+                ctx.mf,
+                ratios.set,
+                "set"
+            );
+
+            return (1 - uniqueRoll) * setRoll * occurrence;
+        }
+
+        return 0;
+    }
+
+    function calculateDropChanceFromRoot(ctx, rootTc) {
+        const acc = makeAccumulator();
+
+        collectPaths(
+            ctx,
+            rootTc,
+            1,
+            1,
+            1,
+            1,
+            {unique: 0, set: 0, rare: 0, magic: 0},
+            acc,
+            1
+        );
+
+        let none = 1;
+
+        for (const group of acc.groups) {
+            for (const outcome of group.values()) {
+                const factor = finalQualityFactor(ctx, outcome.ratios);
+                if (factor <= 0) continue;
+
+                const perPick = outcome.probability * factor;
+                const chance = probabilityForPicks(perPick, outcome.picks);
+
+                none *= (1 - chance);
+            }
+        }
+
+        return 1 - none;
+    }
+
+    function monsterLevelName(levels, monsterId) {
+        const id = n(monsterId);
+
+        const row = levels.find((lvl) =>
+            Array.from({length: 10}, (_, i) => n(lvl[`mon${i + 1}`]))
+                .includes(id)
+        );
+
+        return n(row?.LevelName);
+    }
+
+    async function calculateAll() {
+        const q = n(query).toLowerCase();
+
+        if (!q) {
+            setRows([]);
+            setError("");
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const [
+                monStatsTxt,
+                treasureTxt,
+                weaponsTxt,
+                armorTxt,
+                miscTxt,
+                uniqueItemsTxt,
+                setItemsTxt,
+                itemRatioTxt,
+                itemTypesTxt,
+                levelsTxt,
+            ] = await Promise.all([
+                loadTxt("MonStats.txt"),
+                loadTxt("TreasureClassEx.txt"),
+                loadTxt("Weapons.txt"),
+                loadTxt("Armor.txt"),
+                loadTxt("Misc.txt"),
+                loadTxt("UniqueItems.txt"),
+                loadTxt("SetItems.txt"),
+                loadTxt("ItemRatio.txt"),
+                loadTxt("ItemTypes.txt"),
+                loadTxt("Levels.txt"),
+            ]);
+
+            const monStats = parseTxt(monStatsTxt);
+            const treasure = parseTxt(treasureTxt);
+            const weapons = parseTxt(weaponsTxt);
+            const armors = parseTxt(armorTxt);
+            const misc = parseTxt(miscTxt);
+            const uniqueItems = parseTxt(uniqueItemsTxt);
+            const setItems = parseTxt(setItemsTxt);
+            const itemRatio = parseTxt(itemRatioTxt);
+            const itemTypes = parseTxt(itemTypesTxt);
+            const levels = parseTxt(levelsTxt);
+
+            const autoTcs = buildAutoTcs(weapons, armors, itemTypes);
+            const baseItems = [...weapons, ...armors, ...misc];
+
+            const exceptionalOrEliteCodes = new Set();
+
+            for (const item of baseItems) {
+                const uber = n(item.ubercode);
+                const ultra = n(item.ultracode);
+
+                if (uber) exceptionalOrEliteCodes.add(uber);
+                if (ultra) exceptionalOrEliteCodes.add(ultra);
+            }
+
+            let targetItem = null;
+            let targetCode = "";
+
+            if (dropMode === "unique") {
+                targetItem =
+                    uniqueItems.find((u) => n(u.index).toLowerCase() === q) ||
+                    uniqueItems.find((u) => n(u.index).toLowerCase().includes(q));
+
+                if (!targetItem) throw new Error(`Unique item not found: ${query}`);
+
+                targetCode = n(targetItem.code);
+            }
+
+            if (dropMode === "set") {
+                targetItem =
+                    setItems.find((u) => n(u.index).toLowerCase() === q) ||
+                    setItems.find((u) => n(u.index).toLowerCase().includes(q));
+
+                if (!targetItem) throw new Error(`Set item not found: ${query}`);
+
+                targetCode = rowItemCode(targetItem);
+            }
+
+            if (dropMode === "misc") {
+                const miscItem = misc.find((m) => n(m.code).toLowerCase() === q);
+
+                if (!miscItem) throw new Error(`Misc code not found: ${query}`);
+
+                targetItem = miscItem;
+                targetCode = n(miscItem.code);
+            }
+
+            const baseItem = baseItems.find((i) => n(i.code) === targetCode);
+
+            if (!baseItem) {
+                throw new Error(`Base item not found for code: ${targetCode}`);
+            }
+
+            if (targetItem && n(targetItem.index).toLowerCase().includes("aldur")) {
+                console.log("BASE DEBUG", {
+                    target: n(targetItem.index),
+                    targetCode,
+
+                    baseCode: n(baseItem.code),
+                    baseName: n(baseItem.name),
+
+                    // these are critical
+                    baseLevel: n(baseItem.level),
+                    baseType: n(baseItem.type),
+                    baseRarity: n(baseItem.rarity),
+
+                    normcode: n(baseItem.normcode),
+                    ubercode: n(baseItem.ubercode),
+                    ultracode: n(baseItem.ultracode),
+
+                    isExceptionalElite: isExceptionalOrElite(
+                        baseItem,
+                        exceptionalOrEliteCodes
+                    ),
+
+                    itemRatioRow: getItemRatioRow(
+                        itemRatio,
+                        baseItem,
+                        exceptionalOrEliteCodes
+                    ),
+                });
+            }
+
+            const out = [];
+
+            for (const mon of monStats) {
+                const monsterId = n(mon.Id);
+                if (!monsterId) continue;
+
+                const tcColumn =
+                    difficulty === "H"
+                        ? "TreasureClass1(H)"
+                        : difficulty === "N"
+                            ? "TreasureClass1(N)"
+                            : "TreasureClass1";
+
+                const tcName = n(mon[tcColumn]);
+                if (!tcName) continue;
+
+                const monsterLevel =
+                    difficulty === "H"
+                        ? num(mon["Level(H)"])
+                        : difficulty === "N"
+                            ? num(mon["Level(N)"])
+                            : num(mon.Level);
+                if (monsterLevel <= 0) continue;
+
+                if (dropMode !== "misc" && monsterLevel < num(targetItem.lvl)) {
+                    continue;
+                }
+
+                const rootTc = getRootTc(treasure, tcName, monsterLevel);
+
+                const ctx = {
+                    treasure,
+                    autoTcs,
+                    itemRatio,
+                    uniqueItems,
+                    setItems,
+                    targetItem,
+                    targetCode,
+                    baseItem,
+                    monsterLevel,
+                    mf,
+                    players,
+                    party: players,
+                    dropMode,
+                    exceptionalOrEliteCodes,
+                };
+
+                const chance = calculateDropChanceFromRoot(ctx, rootTc);
+                const levelName = monsterLevelName(levels, monsterId);
+
+                if (chance > 0) {
+                    out.push({
+                        monsterId,
+                        monsterName: n(mon.NameStr) || monsterId,
+                        levelName,
+                        treasureClass: rootTc,
+                        chance,
+                        oneIn: Math.round(1 / chance),
+                        percent: chance * 100,
+                    });
+                }
+            }
+
+            out.sort((a, b) => b.chance - a.chance);
+
+            setRows(out);
+            setPage(1);
+        } catch (e) {
+            setRows([]);
+            setError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const PAGE_SIZE = 50;
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const pageRows = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    return (
+        <>
+            <div className="filtersStack">
+                <div className="filtersRow">
+                    <div className="filtersPanel">
+                        <div style={{display: "flex", gap: 12, width: "100%"}}>
+                            <SearchableSelect
+                                value={dropMode}
+                                onChange={setDropMode}
+                                options={[
+                                    {value: "unique", label: "Unique Item"},
+                                    {value: "set", label: "Set Item"},
+                                    {value: "misc", label: "Misc item by name"},
+                                ]}
+                                style={{flex: "0 0 260px"}}
+                            />
+
+                            <SearchableSelect
+                                value={difficulty}
+                                onChange={setDifficulty}
+                                options={[
+                                    {value: "", label: "Normal"},
+                                    {value: "N", label: "Nightmare"},
+                                    {value: "H", label: "Hell"},
+                                ]}
+                                style={{flex: "0 0 220px"}}
+                            />
+
+                            <SearchableSelect
+                                value={players}
+                                onChange={setPlayers}
+                                options={Array.from({length: 8}, (_, i) => ({
+                                    value: String(i + 1),
+                                    label: `Players ${i + 1}`,
+                                }))}
+                                style={{flex: "0 0 180px"}}
+                            />
+
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                className="searchBar"
+                                value={mf}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, "");
+                                    setMf(value);
+                                }}
+                                placeholder="Magic Find"
+                                style={{
+                                    flex: "0 0 160px",
+                                    maxWidth: 160,
+                                    height: 31
+                                }}
+                            />
+                        </div>
+
+                        <input
+                            type="text"
+                            className="searchBar"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder={dropMode === "misc" ? "Enter misc code..." : "Enter item name..."}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="affixPanel">
+                <div className="affixTableWrapper">
+                    <div className="affixPager">
+                        <div>
+                            <div className="helpTitle">Drop calculator</div>
+                            <div>
+                                Showing {rows.length ? (safePage - 1) * PAGE_SIZE + 1 : 0}
+                                -{Math.min(safePage * PAGE_SIZE, rows.length)} of {rows.length}
+                            </div>
+                        </div>
+
+                        <div className="affixPagerRight">
+                            <button
+                                type="button"
+                                className="btn affixPagerBtn"
+                                disabled={safePage <= 1}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            >
+                                ‹ Prev
+                            </button>
+
+                            <span className="affixPagerInfo">
+                    Page {safePage} / {totalPages}
+                </span>
+
+                            <button
+                                type="button"
+                                className="btn affixPagerBtn"
+                                disabled={safePage >= totalPages}
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            >
+                                Next ›
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="affixTableScroll">
+                        <table className="affixTable">
+                            <thead>
+                            <tr>
+                                <th>Monster</th>
+                                <th>Treasure Class</th>
+                                <th>Level</th>
+                                <th>Drop chance</th>
+                                <th>Drop chance %</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            {loading && (
+                                <tr>
+                                    <td colSpan="5" className="table-message">
+                                        Calculating...
+                                    </td>
+                                </tr>
+                            )}
+
+                            {!loading && error && (
+                                <tr>
+                                    <td colSpan="5" className="table-message">
+                                        {error}
+                                    </td>
+                                </tr>
+                            )}
+
+                            {!loading && !error && pageRows.map((r, i) => (
+                                <tr key={`${r.monsterId || r.monsterName}-${i}`}>
+                                    <td>{r.monsterName}</td>
+                                    <td>{r.treasureClass}</td>
+                                    <td>{r.levelName}</td>
+                                    <td>1:{r.oneIn}</td>
+                                    <td>{r.percent.toFixed(6)}%</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 }
 
 function AuraEffectCalculator() {
@@ -1657,6 +2610,43 @@ function HelpPanel() {
     </div>);
 }
 
+function FateCardTooltip({card}) {
+    if (!card) return <div className="emptyState">Select a fate card.</div>;
+
+    return (
+        <>
+            <div className="tipTitle">{n(card.name)}</div>
+
+            <div className="hr"/>
+
+            <div className="uniqueHeader">Description</div>
+
+            {String(card.description || "")
+                .replace(/\r\n/g, "\n")
+                .trim()
+                .split("\n")
+                .map((line, i) => {
+                    const text = line.trim();
+
+                    if (!text) {
+                        return <div key={i} style={{height: 8}}/>;
+                    }
+
+                    return (
+                        <div key={i} className="runeModLine">
+                            {text}
+                        </div>
+                    );
+                })}
+
+            <div className="hr"/>
+
+            {lineKV("Code:", n(card.code))}
+            {lineKV("Required amount:", n(card.requiredAmount))}
+        </>
+    );
+}
+
 function WeaponTooltip({w, onGoCode, onGoUnique}) {
     if (!w) return <div className="emptyState">Select an item.</div>;
     const title = n(w?.displayName) || n(w?.name) || "Unknown Item";
@@ -1831,7 +2821,7 @@ function useIsMobile(maxWidth = 980) {
     return isMobile;
 }
 
-function CorruptionsTable({ items }) {
+function CorruptionsTable({items}) {
     const PAGE_SIZE = 50;
     const [page, setPage] = React.useState(1);
 
@@ -2228,16 +3218,19 @@ function AffixesPanel({data, loading, error, sort, onChangeSort}) {
     </div>);
 }
 
-function UniqueTooltip({u, onLink}) {
+function UniqueTooltip({u, openDropCalculator, onLink}) {
     if (!u) return <div className="emptyState">Select an item.</div>;
 
     const title = n(u?.displayName) || "Unknown Unique";
 
     const base = uniqueBase(u);
     const baseName = n(base?.displayName) || n(base?.name) || "";
-    const baseTypePretty = uniqueBaseTypeLabelPretty(u) || uniqueBaseTypeLabel(u);
 
-    const mods = Array.isArray(u?.displayProperties) ? u.displayProperties.filter((x) => x != null && String(x).trim() !== "") : [];
+    const mods = visibleProperties(
+        Array.isArray(u?.displayProperties)
+            ? u.displayProperties.filter((x) => x != null && String(x).trim() !== "")
+            : []
+    );
 
     const dropSource = u?.dropSource;
     const dropRate = u?.dropRate;
@@ -2329,6 +3322,15 @@ function UniqueTooltip({u, onLink}) {
             <div className="dropHeader">Crafting</div>
             <div className="line dim">
                 You can create this unique with a special Infernal Kiln Cube Recipes. Check Cube recipes tab above.
+            </div>
+        </>) : null}
+
+        {!u?.hellforged ? (<>
+            <div
+                className="tooltip-link"
+                onClick={() => openDropCalculator(n(u?.displayName) || n(u?.index))}
+            >
+                View drop rates
             </div>
         </>) : null}
     </>);
@@ -2428,88 +3430,169 @@ function StaticDataPanel({data, loading, error, search, onLink}) {
     </>);
 }
 
-function TabsBar({tab, setTab}) {
-    const mainKeys = ["weapons", "armors", "uniques", "runewords", "affixes", "skills", "sacreds", "corruptions"];
-    const secondaryKeys = ["cube", "changes", "damnation", "calculators"];
+function TabsBar({
+                     tab,
+                     setTab,
+                     damnationMode,
+                     toggleDamnationMode,
+                 }) {
+    const [moreOpen, setMoreOpen] = React.useState(false);
+    const moreRef = React.useRef(null);
 
-    return (<>
-        {/* Top row: main content tabs */}
+    const mainKeys = [
+        "weapons",
+        "armors",
+        "uniques",
+        "runewords",
+        "affixes",
+        "skills",
+        "sacreds",
+        "ascendancies",
+    ];
+
+    const moreKeys = [
+        "fatecards",
+        "kiln",
+        "corruptions",
+        "mapping",
+        "cube",
+        "changes",
+        "damnation",
+        "calculators",
+        "dropcalc",
+        "help",
+    ];
+
+    React.useEffect(() => {
+        function onClick(e) {
+            if (!moreRef.current?.contains(e.target)) {
+                setMoreOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", onClick);
+        return () => document.removeEventListener("mousedown", onClick);
+    }, []);
+
+    const moreActive = moreKeys.includes(tab);
+
+    const selectTab = (key) => {
+        setTab(key);
+        setMoreOpen(false);
+    };
+
+    return (
         <div className="tabsPanel">
             <div className="tabsLeft">
                 <div className="tabs">
-                    {mainKeys.map((key) => (<div
-                        key={key}
-                        className={"tab" + (tab === key ? " active" : "")}
-                        onClick={() => setTab(key)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setTab(key)}
-                    >
-                        {TABS[key]}
-                    </div>))}
-                </div>
-            </div>
-            {/* keep an empty right side so layout matches existing styles */}
-            <div className="tabsRight"/>
-        </div>
+                    {mainKeys.map((key) => (
+                        <div
+                            key={key}
+                            className={"tab" + (tab === key ? " active" : "")}
+                            onClick={() => selectTab(key)}
+                            role="button"
+                            tabIndex={0}
+                        >
+                            {renderTabTitle(key)}
+                        </div>
+                    ))}
 
-        {/* Second row: cube + changes on the left, help on the right */}
-        <div className="tabsPanel">
-            <div className="tabsLeft">
-                <div className="tabs">
-                    {secondaryKeys.map((key) => (<div
-                        key={key}
-                        className={"tab" + (tab === key ? " active" : "")}
-                        onClick={() => setTab(key)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setTab(key)}
-                    >
-                        {TABS[key]}
-                    </div>))}
+                    <div className="moreTabsWrap" ref={moreRef}>
+                        <div
+                            className={"tab" + (moreActive ? " active" : "")}
+                            onClick={() => setMoreOpen((v) => !v)}
+                            role="button"
+                            tabIndex={0}
+                        >
+                            More ▾
+                        </div>
+
+                        {moreOpen && (
+                            <div className="moreTabsDropdown">
+                                {moreKeys.map((key) => (
+                                    <div
+                                        key={key}
+                                        className={"moreTabItem" + (tab === key ? " active" : "")}
+                                        onClick={() => selectTab(key)}
+                                        role="button"
+                                        tabIndex={0}
+                                    >
+                                        {renderTabTitle(key)}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             <div className="tabsRight">
-                <div
-                    className={"tab" + (tab === "help" ? " active" : "")}
-                    onClick={() => setTab("help")}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setTab("help")}
-                >
-                    {TABS.help}
-                </div>
+                <label className="toggleWrap topBarToggle">
+                    <span className="toggleLabel">Damnation</span>
+                    <div className="toggle">
+                        <input
+                            type="checkbox"
+                            checked={damnationMode}
+                            onChange={(e) => toggleDamnationMode(e.target.checked)}
+                        />
+                        <span className="toggleSlider"/>
+                    </div>
+                </label>
             </div>
         </div>
-    </>);
+    );
 }
 
 
 export default function App() {
-    const weapons = useJson("Weapons.json");
-    const armors = useJson("Armors.json");
-    const uniques = useJson("Uniques.json");
-    const runewords = useJson("Runewords.json");
-    const sacreds = useJson("Sacreds.json");
-    const cube = useJson("Cube.json");
-    const standard = useJson("Standard.json");
-    const changelog = useJson("Changelog.json");
-    const affixes = useJson("Affixes.json");
-    const skills = useJson("Skills.json");
-    const damnation = useJson("Damnation.json");
-    const corruptions = useJson("Corruptions.json");
+    const [damnationMode, setDamnationMode] = React.useState(
+        localStorage.getItem("damnation") === "true"
+    );
+    const weapons = useJson("Weapons.json", damnationMode);
+    const armors = useJson("Armors.json", damnationMode);
+    const uniques = useJson("Uniques.json", damnationMode);
+    const runewords = useJson("Runewords.json", damnationMode);
+    const sacreds = useJson("Sacreds.json", damnationMode);
+    const cube = useJson("Cube.json", damnationMode);
+    const ascendancies = useJson("Ascendancies.json", damnationMode);
+    const mapping = useJson("Mapping.json", damnationMode);
+    const standard = useJson("Standard.json", damnationMode);
+    const changelog = useJson("Changelog.json", damnationMode);
+    const affixes = useJson("Affixes.json", damnationMode);
+    const skills = useJson("Skills.json", damnationMode);
+    const damnation = useJson("Damnation.json", damnationMode);
+    const corruptions = useJson("Corruptions.json", damnationMode);
+    const fateCards = useJson("FateCards.json", damnationMode);
+    const kiln = useJson("Kiln.json", damnationMode);
 
     const INFO_OPEN_STORAGE_KEY = "the-archivist-v1";
     const searchInputRef = React.useRef(null);
     const skipAutoIndexRef = React.useRef(false);
     const cubeSearchInputRef = React.useRef(null);
+    const ascendanciesSearchInputRef = React.useRef(null);
+    const kilnSearchInputRef = React.useRef(null);
+    const mappingSearchInputRef = React.useRef(null);
     const skillsSearchInputRef = React.useRef(null);
     const changesSearchInputRef = React.useRef(null);
     const skipFilterResetRef = React.useRef(false);
     const [pendingLinkTarget, setPendingLinkTarget] = useState(null);
     const [showTopButton, setShowTopButton] = useState(false);
+
     const [tab, setTab] = useState("weapons");
+    const [dropCalculatorRequest, setDropCalculatorRequest] = useState(null);
+
+    const openDropCalculator = (itemName) => {
+        setDropCalculatorRequest({
+            item: itemName
+        });
+
+        setTab("dropcalc");
+    };
+
+    const toggleDamnationMode = (checked) => {
+        setDamnationMode(checked);
+        localStorage.setItem("damnation", checked ? "true" : "false");
+    };
 
     const [affixSort, setAffixSort] = useState({
         key: "attrs",   // default column
@@ -2523,21 +3606,24 @@ export default function App() {
     const info = INFO_BY_TAB[tab] || {title: "About", text: ""};
     const infoOpen = !!infoOpenByTab[tab];
 
-    const dataset = tab === "weapons" ? weapons : tab === "armors" ? armors : tab === "uniques" ? uniques : tab === "runewords" ? runewords : tab === "sacreds" ? sacreds : tab === "affixes" ? affixes : tab === "skills" ? skills : tab === "corruptions" ? corruptions : weapons; // fallback
+    const dataset = tab === "weapons" ? weapons : tab === "armors" ? armors : tab === "uniques" ?
+        uniques : tab === "runewords" ? runewords : tab === "sacreds" ? sacreds : tab === "affixes" ?
+            affixes : tab === "skills" ? skills : tab === "corruptions" ? corruptions : tab === "fatecards" ?
+                fateCards : weapons; // fallback
 
     useEffect(() => {
         const onScroll = () => {
             setShowTopButton(window.scrollY > 400);
         };
 
-        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("scroll", onScroll, {passive: true});
         onScroll();
 
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
     function goToTop() {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({top: 0, behavior: "smooth"});
     }
 
     function toggleRuneFilter(rune) {
@@ -2593,6 +3679,9 @@ export default function App() {
     const [tierValue, setTierValue] = useState("");
     const [socketsValue, setSocketsValue] = useState("");
     const [cubeSearch, setCubeSearch] = useState("");
+    const [kilnSearch, setKilnSearch] = useState("");
+    const [ascendanciesSearch, setAscendanciesSearch] = useState("");
+    const [mappingSearch, setMappingSearch] = useState("");
     const [changesSearch, setChangesSearch] = useState("");
     const [skillsSearch, setSkillsSearch] = useState("");
     const [uberValue, setUberValue] = useState(false);
@@ -2657,9 +3746,6 @@ export default function App() {
             // if no name → just jump to tab, keep existing skillsSearch as-is
             return;
         }
-
-        // --- item tabs (weapons / armors / uniques / runewords / sacreds) ---
-        if (!TAB_KEYS.includes(t)) return;
 
         // If there's no name part, just jump to the tab and let normal
         // "tab change" behavior reset filters etc.
@@ -2843,6 +3929,12 @@ export default function App() {
             }
 
             if (tab === "corruptions") {
+                if (typeValue && n(it?.displayName) !== typeValue) {
+                    return false;
+                }
+            }
+
+            if (tab === "fatecards") {
                 if (typeValue && n(it?.displayName) !== typeValue) {
                     return false;
                 }
@@ -3061,18 +4153,6 @@ export default function App() {
                 setActiveIndex((i) => Math.max(i - 1, 0));
                 return;
             }
-
-            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-                e.preventDefault();
-
-                const idx = TAB_KEYS.indexOf(tab);
-                if (idx === -1) return;
-
-                const dir = e.key === "ArrowRight" ? 1 : -1;
-                const next = (idx + dir + TAB_KEYS.length) % TAB_KEYS.length;
-
-                setTab(TAB_KEYS[next]);
-            }
         }
 
         window.addEventListener("keydown", onKeyDown);
@@ -3095,6 +4175,12 @@ export default function App() {
             return (it) => {
                 const types = sacredTypes(it);
                 return types.length ? types.join(" / ") : "Sacred";
+            };
+        }
+
+        if (tab === "fatecards") {
+            return () => {
+                return "Fate Card";
             };
         }
 
@@ -3161,24 +4247,48 @@ export default function App() {
         };
     }, [tab]);
 
-    const title = getTitleByTab(tab);
     const countLabel = dataset.loading ? "Loading…" : dataset.error ? `Error: ${dataset.error.message}` : `${filtered.length} items`;
-
     const showSockets = tab === "weapons" || tab === "armors";
     const typePlaceholder = tab === "uniques" ? "All base types" : (tab === "runewords" || tab === "sacreds") ? "All item types" : "All types";
 
     return (<div className="appRoot">
         <div className="wrap">
-            <TabsBar tab={tab} setTab={setTab}/>
-
+            <TabsBar tab={tab} setTab={setTab} damnationMode={damnationMode} toggleDamnationMode={toggleDamnationMode}/>
 
             {tab === "help" ? (<HelpPanel/>) : tab === "calculators" ? (<>
-                <div className="calcWide">
-                    <div className="panels">
-                        <AuraEffectCalculator/>
-                        <CurseEffectCalculator/>
+                    <div className="calcWide">
+                        <div className="panels">
+                            <AuraEffectCalculator/>
+                            <CurseEffectCalculator/>
+                        </div>
+                    </div>
+                </>
+            ) : tab === "dropcalc" ? (
+                <DropCalculatorPanel
+                    request={dropCalculatorRequest}
+                    clearRequest={() => setDropCalculatorRequest(null)}
+                    damnationMode={damnationMode}
+                />
+            ) : tab === "kiln" ? (<>
+                <div className="filtersStack">
+                    <div className="filtersPanel">
+                        <input
+                            type="text"
+                            ref={kilnSearchInputRef}
+                            value={kilnSearch}
+                            onChange={(e) => setKilnSearch(e.target.value)}
+                            className="searchBar"
+                            placeholder="Search..."
+                        />
                     </div>
                 </div>
+                <StaticDataPanel
+                    data={kiln.data}
+                    loading={kiln.loading}
+                    error={kiln.error}
+                    search={kilnSearch}
+                    onLink={handleMarkdownAppLink}
+                />
             </>) : tab === "cube" ? (<>
                 <div className="filtersStack">
                     <div className="filtersPanel">
@@ -3197,6 +4307,46 @@ export default function App() {
                     loading={cube.loading}
                     error={cube.error}
                     search={cubeSearch}
+                    onLink={handleMarkdownAppLink}
+                />
+            </>) : tab === "ascendancies" ? (<>
+                <div className="filtersStack">
+                    <div className="filtersPanel">
+                        <input
+                            type="text"
+                            ref={ascendanciesSearchInputRef}
+                            value={ascendanciesSearch}
+                            onChange={(e) => setAscendanciesSearch(e.target.value)}
+                            className="searchBar"
+                            placeholder="Search..."
+                        />
+                    </div>
+                </div>
+                <StaticDataPanel
+                    data={ascendancies.data}
+                    loading={ascendancies.loading}
+                    error={ascendancies.error}
+                    search={ascendanciesSearch}
+                    onLink={handleMarkdownAppLink}
+                />
+            </>) : tab === "mapping" ? (<>
+                <div className="filtersStack">
+                    <div className="filtersPanel">
+                        <input
+                            type="text"
+                            ref={mappingSearchInputRef}
+                            value={mappingSearch}
+                            onChange={(e) => setMappingSearch(e.target.value)}
+                            className="searchBar"
+                            placeholder="Search..."
+                        />
+                    </div>
+                </div>
+                <StaticDataPanel
+                    data={mapping.data}
+                    loading={mapping.loading}
+                    error={mapping.error}
+                    search={mappingSearch}
                     onLink={handleMarkdownAppLink}
                 />
             </>) : tab === "corruptions" ? (<>
@@ -3220,7 +4370,7 @@ export default function App() {
                         showUber={tab === "uniques"}
                         typePlaceholder={typePlaceholder}
                         searchInputRef={searchInputRef}
-                        showTier={tab !== "runewords" && tab !== "sacreds" && tab !== "affixes" && tab !== "corruptions"}
+                        showTier={tab !== "runewords" && tab !== "sacreds" && tab !== "affixes" && tab !== "corruptions" && tab !== "fatecards"}
                         showHighlight={tab === "uniques" || tab === "runewords" || tab === "weapons" || tab === "armors"}
                         highlightOnly={highlightOnly}
                         setHighlightOnly={setHighlightOnly}
@@ -3231,7 +4381,7 @@ export default function App() {
                     />
                 </div>
                 <div className="affixPanel corruptionsPanel">
-                    <CorruptionsTable items={filtered} />
+                    <CorruptionsTable items={filtered}/>
                 </div>
             </>) : tab === "skills" ? (<>
                 <div className="filtersStack">
@@ -3274,7 +4424,7 @@ export default function App() {
                         showUber={tab === "uniques"}
                         typePlaceholder={typePlaceholder}
                         searchInputRef={searchInputRef}
-                        showTier={tab !== "runewords" && tab !== "sacreds" && tab !== "affixes"}
+                        showTier={tab !== "runewords" && tab !== "sacreds" && tab !== "affixes" && tab !== "fatecards"}
                         showHighlight={tab === "uniques" || tab === "runewords" || tab === "weapons" || tab === "armors"}
                         highlightOnly={highlightOnly}
                         setHighlightOnly={setHighlightOnly}
@@ -3361,7 +4511,8 @@ export default function App() {
                         showHellforged={tab === "uniques"}
                         typePlaceholder={typePlaceholder}
                         searchInputRef={searchInputRef}
-                        showTier={tab !== "runewords" && tab !== "sacreds"}
+                        showType={tab !== "fatecards"}
+                        showTier={tab !== "runewords" && tab !== "sacreds" && tab !== "fatecards"}
                         showHighlight={tab === "uniques" || tab === "runewords" || tab === "weapons" || tab === "armors"}
                         highlightOnly={highlightOnly}
                         setHighlightOnly={setHighlightOnly}
@@ -3438,7 +4589,7 @@ export default function App() {
 
                 <ListPanel
                     tab={tab}
-                    title={title}
+                    title={renderTabTitle(tab)}
                     countLabel={countLabel}
                     items={filtered}
                     activeIndex={activeIndex}
@@ -3462,8 +4613,11 @@ export default function App() {
                         onGoCode={jumpToCode}
                         onGoUnique={jumpToUnique}
                     />)}
-                    {tab === "uniques" && <UniqueTooltip u={activeItem} onLink={handleMarkdownAppLink}/>}
+                    {tab === "uniques" && <UniqueTooltip u={activeItem} onLink={handleMarkdownAppLink}
+                                                         openDropCalculator={openDropCalculator}/>}
                     {tab === "sacreds" && <SacredTooltip s={activeItem} onLink={handleMarkdownAppLink}/>}
+                    {tab === "fatecards" && (<FateCardTooltip card={activeItem}/>
+                    )}
                 </TooltipShell>
             </>)}
         </div>

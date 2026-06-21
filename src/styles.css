@@ -77,7 +77,7 @@ body {
     --c-red: #ff6b6b;
     --c-orange: #caa14a;
 
-    --app-max: 1200px;
+    --app-max: 1300px;
     --app-pad: 16px;
 }
 
@@ -142,7 +142,7 @@ body {
 }
 
 .tooltip {
-    width: min(560px, 100%);
+    width: 100%;
     padding: 14px 14px 12px;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.55)),
     radial-gradient(
@@ -876,6 +876,74 @@ button.btn {
         height: 40px;
         font-size: 22px;
     }
+}
+
+.tooltip-link {
+    margin-top: 12px;
+    color: #c9a45c;
+    cursor: pointer;
+    text-align: center;
+}
+
+.tooltip-link:hover {
+    color: #f0d890;
+    text-decoration: underline;
+}
+
+.table-message {
+    height: 120px;
+    text-align: center;
+    vertical-align: middle;
+    opacity: 0.8;
+    letter-spacing: 2px;
+}
+
+.tabBadge {
+    display: inline-flex;
+    align-items: center;
+
+    margin-left: 6px;
+    padding: 1px 5px;
+
+    font-size: 10px;
+    line-height: 1;
+
+    border: 1px solid #a37a32;
+    border-radius: 4px;
+
+    color: #d8b15d;
+    text-transform: uppercase;
+
+    position: relative;
+    top: -1px;
+}
+
+.moreTabsWrap {
+    position: relative;
+}
+
+.moreTabsDropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 1000;
+    min-width: 230px;
+    padding: 8px;
+    background: rgba(5, 5, 5, 0.98);
+    border: 1px solid rgba(180, 130, 45, 0.45);
+    border-radius: 10px;
+}
+
+.moreTabItem {
+    padding: 9px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.moreTabItem:hover,
+.moreTabItem.active {
+    background: rgba(180, 130, 45, 0.15);
 }
 
 /* -------------------------------------------------------------------------- */

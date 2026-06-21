@@ -12,10 +12,9 @@
     "id": "disabled-content",
     "title": "Disabled Content",
     "text": [
-		"- Exalted, Mythic and Divine Orbs are not available in this mode and their cube recipes have been disabled",
+		"- Mythic and Divine Orbs are not available in this mode and their cube recipes have been disabled",
 		"- Mythic and Divine Orb are not available as drops from the Hellforge",
-		"- Terror of Opulence has been removed from drop tables",
-		"- Flawed gems were re-added to Act 1-5 in Nightmare, Act 1-5 Hell and Map treasure classes"
+		"- Terror of Opulence has been removed from drop tables"
     ]
   },
   {
@@ -23,10 +22,15 @@
     "title": "Additional Content",
     "text": [
 	"Orb of Chance has been introduced - this item is obtainable ONLY by disenchanting uniques into shards and 10x Chance Shard into Orb of Chance. Players can also cube 20, 30, 40 and 50 shards to obtain 2,3,4 or 5 Orb of Chance:",
-	"- Orb of Chance works with normal, magic and rare armor and weapons",
+	"- Orb of Chance works with white, magic and rare armor and weapons",
 	"- Orb of Chance works with magic and rare rings and amulets",
 	"- Orb of Chance works with magic grand and ornate charms",
-	"- Orb of Chance has 50% chance to destroy an item, turning it into a key",
+	"- Orb of Chance has 50% chance to destroy normal item, turning it into a key",
+	"- Orb of Chance has 75% chance to destroy exceptional item, turning it into a key",
+	"- Orb of Chance has 90% chance to destroy elite item, turning it into a key",
+	"- Orb of Chance has 50% chance to grand charm, turning it into a key",
+	"- Orb of Chance has 90% chance to destroy ornate charm, turning it into a key",
+	"- Orb of Chance has 50% chance to destroy ring and amulet, turning it into a key",
 	"- Orb of Chance respects the occurrence chance of unique items:",
 	"- Eg. Templar’s Might shares base (Sacred Armor) with Tyrael’s Might - the first one has occurrence chance of 80% and the second one 20%",
 	"- To disenchant a unique item, cube it with a key to always obtain 1x Chance Shard",
@@ -46,7 +50,6 @@
 		"- Cube recipe to `Obtain random Hellforged Unique` has been changed from requiring `5x Mythic Orb` to require `1x Orb of Chance`",
 		"- Rune downgrading from El to Lem now yields only 1 of the lesser rune (down from 3)",
 		"- Recipe to obtain Armageddon Blade: `Phase Blade + 5x Orb of Chance + 1x Eternal Coin`"
-
     ]
   },
   {

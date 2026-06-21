@@ -1,5 +1,16 @@
 [
   {
+    "id": "1.2.0",
+    "title": "v1.2.0",
+    "text": [
+      "- Added tab Drop Calculator - please mind that it's still in very early alpha stage",
+      "- Changed the layout - instead of second tab bar, added more button",
+      "- Made the site slightly wider",
+      "- Added Damnation Mode toggle - it will load data set specific for damnation if on",
+      "- Added a lot of missing and new information"
+    ]
+  },
+  {
     "id": "1.1.6",
     "title": "v1.1.6",
     "text": [
