@@ -1,5 +1,12 @@
 [
   {
+    "id": "1.2.1",
+    "title": "v1.2.1",
+    "text": [
+      "- If an item has different occurrence chance when created by currency (Mythic, Divine Orb), then it will display it in the drop information"
+    ]
+  },
+  {
     "id": "1.2.0",
     "title": "v1.2.0",
     "text": [

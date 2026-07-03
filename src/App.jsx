@@ -3341,7 +3341,6 @@ function UniqueTooltip({u, openDropCalculator, onLink}) {
             {hasDropSource && lineKV("Drop source:", String(dropSource), "")}
             {hasDropRate && lineKV("Drop rate:", String(dropRate), "")}
             {hasOccurrenceChance && lineKV("Occurrence chance:", String(occurrenceChance), "")}
-            {hasOccurrenceChanceCurrency && occurrenceChance !== occurrenceChanceCurrency && lineKV("Occurrence chance for currency:", String(occurrenceChanceCurrency), "")}
         </>) : null}
 
         {hasRequirements ? (<>
@@ -3355,6 +3354,8 @@ function UniqueTooltip({u, openDropCalculator, onLink}) {
         {u?.showCanBeCreatedWith === true && !u?.hellforged ? (<>
             <div className="hr"/>
             <div className="dropHeader">Crafting</div>
+            {hasOccurrenceChanceCurrency && occurrenceChance !== occurrenceChanceCurrency && lineKV("Occurrence chance for currency:", String(occurrenceChanceCurrency), "")}
+            <br/>
             <div className="line dim">
                 You can create this unique with a{" "}
                 <span className="highlight">{creationOrb}</span> on its base item.
