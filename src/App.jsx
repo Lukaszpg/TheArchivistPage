@@ -3384,28 +3384,6 @@ function UniqueTooltip({u, openDropCalculator, onLink}) {
 function StaticDataPanel({data, loading, error, search, onLink}) {
     const [openMap, setOpenMap] = React.useState({});
 
-    const toggle = (id) => {
-        setOpenMap((m) => {
-            const current = m[id] ?? true;
-            return {...m, [id]: !current};
-        });
-    };
-
-    if (loading) {
-        return (<div className="helpPanel">
-            <div className="helpBody">Loading data…</div>
-        </div>);
-    }
-
-    if (error) {
-        return (<div className="helpPanel">
-            <div className="helpBody">
-                Failed to load <code>data</code>:{" "}
-                {String(error.message || error)}
-            </div>
-        </div>);
-    }
-
     const all = Array.isArray(data) ? data : [];
 
     const filtered = React.useMemo(() => {
@@ -3425,12 +3403,40 @@ function StaticDataPanel({data, loading, error, search, onLink}) {
         });
     }, [all, search]);
 
-    if (!filtered.length) {
-        return (<div className="helpPanel">
-            <div className="helpBody">
-                <div className="emptyState">No cube recipes match your search.</div>
+    const toggle = (id) => {
+        setOpenMap((m) => {
+            const current = m[id] ?? true;
+            return {...m, [id]: !current};
+        });
+    };
+
+    if (loading) {
+        return (
+            <div className="helpPanel">
+                <div className="helpBody">Loading data…</div>
             </div>
-        </div>);
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="helpPanel">
+                <div className="helpBody">
+                    Failed to load <code>data</code>:{" "}
+                    {String(error.message || error)}
+                </div>
+            </div>
+        );
+    }
+
+    if (!filtered.length) {
+        return (
+            <div className="helpPanel">
+                <div className="helpBody">
+                    <div className="emptyState">No cube recipes match your search.</div>
+                </div>
+            </div>
+        );
     }
 
     return (<>
