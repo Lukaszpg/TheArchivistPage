@@ -3235,11 +3235,13 @@ function UniqueTooltip({u, openDropCalculator, onLink}) {
     const dropSource = u?.dropSource;
     const dropRate = u?.dropRate;
     const occurrenceChance = u?.occurrenceChance;
+    const occurrenceChanceCurrency = u?.occurrenceChanceCurrency;
 
     const hasDropSource = dropSource !== null && dropSource !== undefined && String(dropSource).trim() !== "";
     const hasDropRate = dropRate !== null && dropRate !== undefined && String(dropRate).trim() !== "";
     const hasOccurrenceChance = occurrenceChance !== null && occurrenceChance !== undefined && String(occurrenceChance).trim() !== "";
-    const hasDropInfo = hasDropSource || hasDropRate || hasOccurrenceChance;
+    const hasOccurrenceChanceCurrency = occurrenceChanceCurrency !== null && occurrenceChanceCurrency !== undefined && String(occurrenceChanceCurrency).trim() !== "";
+    const hasDropInfo = hasDropSource || hasDropRate || hasOccurrenceChance || hasOccurrenceChanceCurrency;
 
     const itemType = getItemTypeForUnique(u);
     const requiredLevel = getRequiredLevelForUnique(u, itemType);
@@ -3247,7 +3249,48 @@ function UniqueTooltip({u, openDropCalculator, onLink}) {
     const requiredStrength = getRequiredStrengthForUnique(u, itemType);
     const hasRequirements = (requiredLevel > 0 && requiredStrength > 0) || (requiredLevel > 0 && requiredDexterity > 0) || (requiredLevel > 0 && requiredDexterity > 0 && requiredStrength > 0);
 
-    const creationOrb = u?.itemTier === "Normal" || u?.itemTier === "Exceptional" ? "Mythic Orb" : "Divine Orb";
+    const mythicOrbIndexes = new Set([
+        "Nagelring",
+        "Manald Heal",
+        "Raven Frost",
+        "Dwarf Star",
+        "Carrion Wind",
+        "Nokozan Relic",
+        "Atma's Scarab",
+        "The Eye of Etlich",
+        "Crescent Moon",
+        "Saracen's Chance",
+        "The Mahim-Oak Curio",
+        "The Cat's Eye",
+    ]);
+
+    const divineOrbIndexes = new Set([
+        "The Stone of Jordan",
+        "Bul Katho's Wedding Band",
+        "Nature's Peace",
+        "Constricting Ring",
+        "Wisp",
+        "Deaths Poise",
+        "Call of the Brotherhood",
+        "Baals Pass",
+        "Baals Respite",
+        "Baals Grip",
+        "The Rising Sun",
+        "Highlord's Wrath",
+        "Mara's Kaleidoscope",
+        "Seraph's Hymn",
+        "Metalgrid",
+        "Defiance of Destiny",
+        "Astramentis",
+    ]);
+
+    const creationOrb = mythicOrbIndexes.has(u?.index)
+        ? "Mythic Orb"
+        : divineOrbIndexes.has(u?.index)
+            ? "Divine Orb"
+            : (u?.itemTier === "Normal" || u?.itemTier === "Exceptional")
+                ? "Mythic Orb"
+                : "Divine Orb";
 
     return (<>
         <div className="tipUniqueTitle">{title}</div>
@@ -3298,6 +3341,7 @@ function UniqueTooltip({u, openDropCalculator, onLink}) {
             {hasDropSource && lineKV("Drop source:", String(dropSource), "")}
             {hasDropRate && lineKV("Drop rate:", String(dropRate), "")}
             {hasOccurrenceChance && lineKV("Occurrence chance:", String(occurrenceChance), "")}
+            {hasOccurrenceChanceCurrency && occurrenceChance !== occurrenceChanceCurrency && lineKV("Occurrence chance for currency:", String(occurrenceChanceCurrency), "")}
         </>) : null}
 
         {hasRequirements ? (<>
